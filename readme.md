@@ -1,6 +1,6 @@
 # STEPS FOR STRUCTURAL CHARACTERIZATION OF PATHOGENIC AND BENIGN VARIANTS
 
-`00_DataPreparation.ipynb`
+## `00_DataPreparation.ipynb`
 
 1. Read output files from vep  
     clinvar = ../results/pipeline_results/clinvar_variants.pkl
@@ -10,7 +10,7 @@
 3. Normalize accesibility column. RSA = Area divided by residue size 
 4. Save ../results/1_merged.csv
 
-`01_AssignmentWrapperPhysicochem.py`
+## `01_AssignmentWrapperPhysicochem.py`
 
 1. Assign 
     -Energy
@@ -27,7 +27,7 @@
 5. Filter for only genes in both.
 6. Save as '../results/4_features_geneboth.csv'
 
-`O2_StatisticalTest`
+## `O2_StatisticalTest`
 
 1. Load 2_features_all,3_features_byprotienclass,4_features_geneboth
 2. Get equal number of common and pathogenic variants for each protein class
