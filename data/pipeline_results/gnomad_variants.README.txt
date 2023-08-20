@@ -1,0 +1,58 @@
+clinvar_variants.pkl
+
+Retrieval:
+1. Downloaded form gnomAD website: https://storage.googleapis.com/gcp-public-data--gnomad/release/2.1.1/liftover_grch38/vcf/exomes/gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf.bgz
+   - /ibex/scratch/projects/c2102/databases/gnomad_v2.1.1_liftover/gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf.bgz
+
+3. Filtered by quality and allele frequency
+   - bcftools view -f PASS -i 'AF>0.05' gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf.bgz > pass_common.vcf
+
+2. Split into chromosomes with bcftools
+   - /ibex/scratch/projects/c2102/databases/gnomad_v2.1.1_liftover/chr##.vcf
+
+Processing:
+1. Annotated with VEP
+   - /ibex/scratch/projects/c2102/databases/gnomad_v2.1.1_liftover/chr#/chr#_x##.vcf.vep
+
+2. Select variants that contain 'missense_variant' in the 'Consequence' column (from VEP)
+
+3. Filter out variants that contain 'pathogenic' or 'risk' in the clinical significance (CLIN_SIG column from VEP)
+
+6. Select variants where the RefSeq ID (RefSeq column) is equal to the transcript indicated in the MANE_SELECT or MANE_PLUS_CLINICAL columns (from VEP)
+
+7. Obtained UniProt IDs for each variant, from two sources (sometimes there's more than 1 UniProt ID for a given transcript):
+   a) UNIPROT_ISOFORM column (from VEP)
+   b) UniProt database (/ibex/projects/c2102/databases/uniprot/2023_02/current_release/knowledgebase/idmapping/by_organism/HUMAN_9606_idmapping.dat.gz)
+
+8. Get the AlphaFold model for each transcript, from two sources:
+   a) MANE dataset from the AlphaFold Database (/ibex/scratch/projects/c2102/databases/alphafold/alphafold_human_v4)
+   b) Regular AlphaFold Database (/ibex/scratch/projects/c2102/databases/alphafold/alphafold_mane)
+
+   Checked that the sequence length and residue match.
+
+9. Obtained intra-molecular contacts (6 Angstroms away)
+
+10. Obtained catalytic sites for residue of interest and residues 8 Angstroms away (with function from variant_annotator.structure_features.catalyticSites)
+
+11. Annotated AlphaFold models with DSSP to calculate secondary structure and surface accessible area for every residue, and extracted the values for the variants.
+
+12. Extracted pLDDT scores in a window of 5 residues centered around the residue of interest (proxy for disorder)
+
+13. Annotated with FoldX
+
+
+Potentially useful columns:
+
+UniProt_IDs          list of UniProt IDs found for this transcript
+PDB_path             path to the AF model
+intra_contacts       list of intra-molecular contacts (currently 8 A away, will change to 6)
+is_catalytic         if the residue of interest of any residue 8 A away is annotated as catalytic
+pLDDT                mean pLDDT for 5-residue window centered in residue of interest
+secondary_structre   secondary structure assignment by DSSP (see Output_short section in https://swift.cmbi.umcn.nl/gv/dssp/)
+accessibility        residue water exposed surface in Angstrom**2, as annotated by DSSP
+SIFT                 pathogenicity score (Stefan didn't like it)
+PolyPhen             pathogenicity score (Stefan didn't like it)
+Conservation         conservation score from the Ensembl Compara database. GERP scores from the EPO 35 way mammalian alignment. Positive scores represent highly-conserved positions while negative scores represent highly-variable positions.
+BLOSUM62             score for conservative vs nonconservative amino acid changes (https://www.labxchange.org/library/items/lb:LabXchange:24d0ec21:lx_image:1#:~:text=BLOSUM%20scores%20for%20substituting%20the,are%20classified%20as%20non%2Dconservative.)
+DOMAINS              names of overlapping protein domains from different sources
+last 22 columns from FoldX     https://foldxsuite.crg.eu/command/BuildModel

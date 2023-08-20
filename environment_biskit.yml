@@ -1,0 +1,29 @@
+# combination of environments from pytorch and tensorflow projects from vislab
+# 28 april 2022
+name: null
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - biopython
+  - git
+  - jupyterlab
+  - jupyterlab-git
+  - jupyterlab-lsp
+  - jupyterlab_vim
+  - matplotlib
+  - numpy
+  - nodejs
+  - pandas
+  - pip
+  - python=3.9
+  - python-language-server
+  - seaborn
+  - scikit-learn
+  - scipy
+
+
+
+

@@ -1,0 +1,91 @@
+clinvar_variants.pkl
+
+Retrieval:
+1. Cecilia sent me file `PAVS_8_nodup.csv`. This was the starting point.
+
+   Note: In the file there are 912 variants, but only 750 unique variants according to the values in the hgvsAllele column.
+
+Processing:
+1. Annotated with VEP
+   - First extracted the hgvs IDs from the file and saved them to `hgvs_variants.txt` to give them as input to VEP
+   - Ran with `run_vep.sbatch`, and produced the file `hgvs_variants.txt.vep` in vcf format
+
+   Note: there were annotations only for 767 variants. The rest were not found with the provided sequence ID.
+
+2. Select variants that contain 'missense_variant' in the 'Consequence' column (from VEP)
+
+3. Combine add the following annotations from the `PAVS_8_nodup.csv` file:
+   - hgvsAllele
+   - geneSymbol
+   - protein
+   - zygosityLabel : combined the values for multiple individuals with the same variant into a list
+   - phenoLabels : combined the values for multiple individuals with the same variant into a list
+   - sex : combined the values for multiple individuals with the same variant into a list
+
+   Note: there are 8 entries where the gene symbol from PAVS doesn't match with the gene symbol given by VEP, but the names are similar so I just left it like that
+
+
+4. Select variants where the RefSeq ID (RefSeq column) is equal to the transcript indicated in the MANE_SELECT or MANE_PLUS_CLINICAL columns from VEP (728 variants).
+
+5. Select variants where the mutated amino acids' identity and position match from `PAVS_8_nodup.csv` and the VEP annotations (611 variants).
+
+7. Obtained UniProt IDs for each variant, from two sources (sometimes there's more than 1 UniProt ID for a given transcript):
+   a) UNIPROT_ISOFORM column (from VEP)
+   b) UniProt database (/ibex/projects/c2102/databases/uniprot/2023_02/current_release/knowledgebase/idmapping/by_organism/HUMAN_9606_idmapping.dat.gz)
+
+8. Get the AlphaFold model for each transcript, from two sources:
+   a) MANE dataset from the AlphaFold Database (/ibex/scratch/projects/c2102/databases/alphafold/alphafold_human_v4)
+   b) Regular AlphaFold Database (/ibex/scratch/projects/c2102/databases/alphafold/alphafold_mane)
+
+   Note: Checked that the sequence length and residue match.
+
+9. Removed variants with no PDB model found (578 left).
+
+10. Obtained intra-molecular contacts (6 Angstroms away)
+
+11. Obtained catalytic sites for residue of interest and residues 8 Angstroms away (with function from variant_annotator.structure_features.catalyticSites)
+
+12. Annotated AlphaFold models with DSSP to calculate secondary structure and surface accessible area for every residue, and extracted the values for the variants.
+
+13. Extracted pLDDT scores in a window of 5 residues centered around the residue of interest (proxy for disorder)
+
+14. Annotated with FoldX
+
+15. Removed duplicated variants (481 left)
+
+
+Total unique variants left: 481
+
+Why:
+- Many transcript IDs reported were not found by VEP, or the residue numbers didn't match between VEP and PAVS (~250)
+- Selected variants with a canonical transcript from MANE (removed ~50)
+- Excluded variants with no pre-calculated AlphaFold model (~30)
+- Removed duplicated variants from the remaining (~100)
+
+
+
+
+Potentially useful columns:
+
+UniProt_IDs          list of UniProt IDs found for this transcript
+PDB_path             path to the AF model
+intra_contacts       list of intra-molecular contacts (currently 8 A away, will change to 6)
+is_catalytic         if the residue of interest of any residue 8 A away is annotated as catalytic
+pLDDT                mean pLDDT for 5-residue window centered in residue of interest
+secondary_structre   secondary structure assignment by DSSP (see Output_short section in https://swift.cmbi.umcn.nl/gv/dssp/)
+accessibility        residue water exposed surface in Angstrom**2, as annotated by DSSP
+SIFT                 pathogenicity score (Stefan didn't like it)
+PolyPhen             pathogenicity score (Stefan didn't like it)
+Conservation         conservation score from the Ensembl Compara database. GERP scores from the EPO 35 way mammalian alignment. Positive scores represent highly-conserved positions while negative scores represent highly-variable positions.
+BLOSUM62             score for conservative vs nonconservative amino acid changes (https://www.labxchange.org/library/items/lb:LabXchange:24d0ec21:lx_image:1#:~:text=BLOSUM%20scores%20for%20substituting%20the,are%20classified%20as%20non%2Dconservative.)
+DOMAINS              names of overlapping protein domains from different sources
+last 22 columns from FoldX     https://foldxsuite.crg.eu/command/BuildModel
+
+Columns from PAVS:
+
+hgvsAllele
+geneSymbol
+protein
+zygosityLabel        has one value for every case with the same variant
+phenoLabels          has one value for every case with the same variant
+sex                  has one value for every case with the same variant
